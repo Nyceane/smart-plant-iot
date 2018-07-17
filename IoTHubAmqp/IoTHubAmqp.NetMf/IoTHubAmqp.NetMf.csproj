@@ -52,7 +52,18 @@
       <HintPath>..\packages\AMQPNetLite.1.1.2\lib\netmf43\Amqp.NetMF.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Microsoft.SPOT.Native" />
+    <Reference Include="Microsoft.SPOT.Native">
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.SPOT.Net">
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.IO" />
+    <Reference Include="SecretLabs.NETMF.Hardware.Netduino" />
+    <Reference Include="Microsoft.SPOT.Hardware">
+      <Private>True</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources.resx">
