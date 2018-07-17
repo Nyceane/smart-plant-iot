@@ -2,12 +2,12 @@
 using Amqp.Framing;
 using System;
 using System.Diagnostics;
+using System.Net;
 using System.Text;
 using System.Threading;
 using Microsoft.SPOT;
 using Microsoft.SPOT.Hardware;
 using Microsoft.SPOT.Net.NetworkInformation;
-using System.Net;
 using SecretLabs.NETMF.Hardware.Netduino;
 
 
@@ -31,20 +31,23 @@ namespace IoTHubAmqp
         static void Main(string[] args)
         {
             Debug.Print("Start");
+            /*
             _interfaces = NetworkInterface.GetAllNetworkInterfaces();
 
             if(!InitializeNetwork())
             {
                 return;
-            }
+            }*/
+            Thread.Sleep(5000);
 
-//          Debug.Print("IP Address: " + IPAddress.GetDefaultLocalAddress().ToString();
-            Debug.Print("Ready");
-
-            address = new Address(HOST, PORT, null, null);
+            address = new Address(HOST, PORT, null, null, scheme: "AMQP");
 
             try{
+                Debug.Print("Ready");
+
                 connection = new Connection(address);                
+                Debug.Print("Pass");
+
             }
             catch(Exception e)
             {
@@ -53,22 +56,27 @@ namespace IoTHubAmqp
 
 
 
-            string audience = Fx.Format("{0}/devices/{1}", HOST, DEVICE_ID);
+            string audience = Fx.Format("/devices/{0}/events", DEVICE_ID);
             string resourceUri = Fx.Format("{0}/devices/{1}", HOST, DEVICE_ID);
             Debug.Print("second");
 
             string sasToken = GetSharedAccessSignature(null, DEVICE_KEY, resourceUri, new TimeSpan(1, 0, 0));
+               Debug.Print("Third");
+
             bool cbs = PutCbsToken(connection, HOST, sasToken, audience);
+            Debug.Print("3a");
 
             if (cbs)
             {
-                session = new Session(connection);
 
+                session = new Session(connection);
+                Debug.Print("31");
                 SendEvent();
-                receiverThread = new Thread(ReceiveCommands);
-                receiverThread.Start();
+                Debug.Print("32");
+//                receiverThread = new Thread(ReceiveCommands);
+//                receiverThread.Start();
             }
-            Debug.Print("Thread");
+            Debug.Print("forth");
 
             // just as example ...
             // the application ends only after received a command or timeout on receiving
@@ -180,13 +188,6 @@ namespace IoTHubAmqp
 
                     return true;
 
-                    //NOTE: this does not work, even though it's on the actual network device. [shrug]
-                    // try to renew the DHCP lease and get a new IP Address
-                    //net.RenewDhcpLease ();
-                    //while (net.IPAddress == "0.0.0.0") {
-                    //  Thread.Sleep (10);
-                    //}
-
                 }
                 else
                 {
@@ -274,13 +275,19 @@ namespace IoTHubAmqp
 
         static private bool PutCbsToken(Connection connection, string host, string shareAccessSignature, string audience)
         {
+            Debug.Print("1");
+
             bool result = true;
+
             Session session = new Session(connection);
+            Debug.Print("2");
 
             string cbsReplyToAddress = "cbs-reply-to";
             var cbsSender = new SenderLink(session, "cbs-sender", "$cbs");
-            var cbsReceiver = new ReceiverLink(session, cbsReplyToAddress, "$cbs");
+            Debug.Print("3");
 
+            var cbsReceiver = new ReceiverLink(session, cbsReplyToAddress, "$cbs");
+            Debug.Print("4");
             // construct the put-token message
             var request = new Message(shareAccessSignature);
             request.Properties = new Properties();
@@ -290,7 +297,9 @@ namespace IoTHubAmqp
             request.ApplicationProperties["operation"] = "put-token";
             request.ApplicationProperties["type"] = "azure-devices.net:sastoken";
             request.ApplicationProperties["name"] = audience;
+            Debug.Print("5");
             cbsSender.Send(request);
+            Debug.Print("6");
 
             // receive the response
             var response = cbsReceiver.Receive();
@@ -324,16 +333,18 @@ namespace IoTHubAmqp
             // the canonical Uri scheme is http because the token is not amqp specific
             // signature is computed from joined encoded request Uri string and expiry string
 
-#if NETMF
+
+//#if NETMF
             // needed in .Net Micro Framework to use standard RFC4648 Base64 encoding alphabet
             System.Convert.UseRFC4648Encoding = true;
-#endif
+//#endif
+
             string expiry = ((long)(DateTime.UtcNow - new DateTime(UtcReference, DateTimeKind.Utc) + tokenTimeToLive).TotalSeconds()).ToString();
+
             string encodedUri = HttpUtility.UrlEncode(resource);
 
             byte[] hmac = SHA.computeHMAC_SHA256(Convert.FromBase64String(sharedAccessKey), Encoding.UTF8.GetBytes(encodedUri + "\n" + expiry));
             string sig = Convert.ToBase64String(hmac);
-
             if (keyName != null)
             {
                 return Fx.Format(
