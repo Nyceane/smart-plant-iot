@@ -15,7 +15,7 @@ var str = ConfigurationManager.ConnectionStrings["sqldb_connection"].ConnectionS
 using (SqlConnection conn = new SqlConnection(str))
    {
        conn.Open();
-var text = "SELECT Top 100 Temperature, Moisture, UVLight from dbo.IoTData Order by DateCreated DESC";
+var text = "SELECT Top 100 Temperature, Moisture, UVLight, Humidity from dbo.SmartPlant Order by DateCreated DESC";
        SmartPlant ret = new SmartPlant();
 using (SqlCommand cmd = new SqlCommand(text, conn))
        {
@@ -26,7 +26,8 @@ while (reader.Read())
                {
                    ret.Temperature = (int)reader[0];
                    ret.Moisture = (int)reader[1];
-                   ret.UVLight = (int)reader[1];
+                   ret.UVLight = (int)reader[2];
+                   ret.Humidity = (int)reader[3];
                }
            }
 finally
@@ -47,4 +48,5 @@ public class SmartPlant
     public float Temperature { get; set; }
     public float Moisture { get; set; }
     public float UVLight { get; set; }
+    public float Humidity { get; set; }
 }
